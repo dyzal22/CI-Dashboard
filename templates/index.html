@@ -1,9 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Command Injection Web Dashboard</title>
+    <title>Command Injection Dashboard</title>
+
+<style>
+    body {
+        font-family: Arial;
+        margin: 40px;
+        background: var(--bg);
+        color: var(--text);
+        transition: 0.3s;
+    }
+
+    :root {
+        --bg: white;
+        --text: black;
+        --table-bg: #f3f3f3;
+    }
+
+    .dark {
+        --bg: #121212;
+        --text: #ffffff;
+        --table-bg: #1e1e1e;
+    }
+
+    .toggle-btn {
+        position: fixed;
+        right: 20px;
+        top: 20px;
+        padding: 8px 16px;
+        background: #333;
+        color: white;
+        cursor: pointer;
+        border: none;
+    }
+</style>
+
+<script>
+function toggleDarkMode() {
+    const body = document.body;
+    body.classList.toggle('dark');
+    localStorage.setItem("darkmode", body.classList.contains("dark"));
+}
+window.onload = () => {
+    if (localStorage.getItem("darkmode") === "true") {
+        document.body.classList.add("dark");
+    }
+}
+</script>
+
 </head>
-<body style="font-family: Arial; margin: 40px;">
+<body>
+
+<button class="toggle-btn" onclick="toggleDarkMode()">🌓 Dark Mode</button>
 
 <h2>🔍 Command Injection Scanner – Web Dashboard</h2>
 
@@ -19,7 +68,7 @@
     </select>
     <br><br>
 
-    <label><b>HTTP Method:</b></label><br>
+    <label><b>Method:</b></label><br>
     <select name="method">
         <option value="get">GET</option>
         <option value="post">POST</option>
@@ -28,26 +77,19 @@
 
     <h3>Authentication</h3>
 
-    <label><b>Tipe Auth:</b></label><br>
-    <select name="auth_type">
-        <option value="none">None</option>
-        <option value="bearer">Bearer Token</option>
-    </select>
-    <br><br>
-
     <label>Bearer Token:</label><br>
-    <input type="text" name="bearer" style="width: 400px;">
+    <input type="text" name="bearer" style="width:400px;">
     <br><br>
 
     <label>Cookie:</label><br>
-    <input type="text" name="cookie" style="width: 400px;">
+    <input type="text" name="cookie" style="width:400px;">
     <br><br>
 
-    <label>Custom Headers (format: Header: Value per line)</label><br>
+    <label>Custom Headers (Header: Value per line)</label><br>
     <textarea name="headers" style="width:400px; height:100px;"></textarea>
     <br><br>
 
-    <button type="submit" style="padding: 10px 20px;">Start Scan</button>
+    <button type="submit" style="padding:10px 20px;">Start Scan</button>
 </form>
 
 </body>
