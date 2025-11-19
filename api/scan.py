@@ -4,6 +4,11 @@ from fastapi.templating import Jinja2Templates
 import requests
 from bs4 import BeautifulSoup
 import time
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from fastapi.responses import FileResponse
+import uuid
+import os
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
