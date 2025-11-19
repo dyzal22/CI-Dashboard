@@ -1,14 +1,16 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 import requests
 from bs4 import BeautifulSoup
 import time
+import uuid
+import json
+import os
+
+# PDF
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from fastapi.responses import FileResponse
-import uuid
-import os
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -20,6 +22,10 @@ SAFE_PAYLOADS = [
     "|sleep 2"
 ]
 
+
+# ==================================================
+# AUTH HEADER BUILDER
+# ==================================================
 def build_headers(auth_type, bearer, cookie, custom_headers):
     headers = {"User-Agent": "CI-Dashboard/1.0"}
 
@@ -38,6 +44,9 @@ def build_headers(auth_type, bearer, cookie, custom_headers):
     return headers
 
 
+# ==================================================
+# PARAM DISCOVERY
+# ==================================================
 def discover_parameters(url):
     try:
         r = requests.get(url, timeout=5)
@@ -55,14 +64,19 @@ def discover_parameters(url):
         return []
 
 
+# ==================================================
+# PAYLOAD TESTER
+# ==================================================
 def test_payload(url, param, payload, headers, method="get"):
     try:
         start = time.time()
 
         if method == "post":
-            res = requests.post(url, data={param: payload}, headers=headers, timeout=5)
+            res = requests.post(url, data={param: payload},
+                                headers=headers, timeout=5)
         else:
-            res = requests.get(url, params={param: payload}, headers=headers, timeout=5)
+            res = requests.get(url, params={param: payload},
+                               headers=headers, timeout=5)
 
         delta = time.time() - start
 
@@ -78,11 +92,17 @@ def test_payload(url, param, payload, headers, method="get"):
         return {"payload": payload, "error": str(e)}
 
 
+# ==================================================
+# ROOT PAGE
+# ==================================================
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+# ==================================================
+# MAIN SCAN ENDPOINT
+# ==================================================
 @app.post("/scan", response_class=HTMLResponse)
 async def scan(
     request: Request,
@@ -126,3 +146,42 @@ async def scan(
         "method": method,
         "results": result_data
     })
+
+
+# ==================================================
+# PDF EXPORT ENDPOINT
+# ==================================================
+@app.post("/export_pdf")
+async def export_pdf(url: str = Form(...), data: str = Form(...)):
+    file_id = str(uuid.uuid4())
+    pdf_path = f"/tmp/report_{file_id}.pdf"
+
+    decoded = json.loads(data)
+
+    styles = getSampleStyleSheet()
+    doc = SimpleDocTemplate(pdf_path)
+    flow = []
+
+    flow.append(Paragraph("<b>Command Injection Report</b>", styles["Title"]))
+    flow.append(Spacer(1, 20))
+    flow.append(Paragraph(f"<b>Target URL:</b> {url}", styles["Normal"]))
+    flow.append(Spacer(1, 10))
+
+    for r in decoded:
+        flow.append(Paragraph(f"<b>Parameter:</b> {r['param']}", styles["Heading2"]))
+
+        for t in r["tests"]:
+            flow.append(Paragraph(f"<b>Payload:</b> {t['payload']}", styles["Normal"]))
+
+            if "status" in t:
+                flow.append(Paragraph(f"Status: {t['status']}", styles["Normal"]))
+                flow.append(Paragraph(f"Response Time: {t.get('response_time', '-')}", styles["Normal"]))
+                flow.append(Paragraph(f"Snippet:<br/>{t['body_snippet']}", styles["Normal"]))
+            else:
+                flow.append(Paragraph(f"Error: {t['error']}", styles["Normal"]))
+
+            flow.append(Spacer(1, 10))
+
+    doc.build(flow)
+
+    return FileResponse(pdf_path, filename="CI_Report.pdf")
