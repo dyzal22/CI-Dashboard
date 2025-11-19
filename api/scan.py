@@ -103,7 +103,7 @@ async def index(request: Request):
 # ==================================================
 # MAIN SCAN ENDPOINT
 # ==================================================
-@app.post("/scan", response_class=HTMLResponse)
+@app.post("/api/scan", response_class=HTMLResponse)
 async def scan(
     request: Request,
     url: str = Form(...),
@@ -115,8 +115,6 @@ async def scan(
     headers: str = Form("")
 ):
 
-    hdrs = build_headers(auth_type, bearer, cookie, headers)
-
     if param == "auto":
         params = discover_parameters(url)
         if not params:
@@ -127,31 +125,43 @@ async def scan(
     else:
         params = [param]
 
-    result_data = []
-
-    for p in params:
-        results = []
-        for pl in SAFE_PAYLOADS:
-            r = test_payload(url, p, pl, hdrs, method)
-            results.append(r)
-
-        result_data.append({
-            "param": p,
-            "tests": results
-        })
-
-    return templates.TemplateResponse("result.html", {
+    return templates.TemplateResponse("scanner.html", {
         "request": request,
         "url": url,
+        "params": params,
         "method": method,
-        "results": result_data
+        "auth_type": auth_type,
+        "bearer": bearer,
+        "cookie": cookie,
+        "headers": headers,
+        "payloads": SAFE_PAYLOADS
     })
+
+
+# ==================================================
+# TESTING ENDPOINT
+# ==================================================
+@app.post("/api/test")
+async def test(
+    request: Request,
+    url: str = Form(...),
+    param: str = Form(...),
+    payload: str = Form(...),
+    method: str = Form("get"),
+    auth_type: str = Form("none"),
+    bearer: str = Form(""),
+    cookie: str = Form(""),
+    headers: str = Form("")
+):
+    hdrs = build_headers(auth_type, bearer, cookie, headers)
+    result = test_payload(url, param, payload, hdrs, method)
+    return result
 
 
 # ==================================================
 # PDF EXPORT ENDPOINT
 # ==================================================
-@app.post("/export_pdf")
+@app.post("/api/export_pdf")
 async def export_pdf(url: str = Form(...), data: str = Form(...)):
     file_id = str(uuid.uuid4())
     pdf_path = f"/tmp/report_{file_id}.pdf"

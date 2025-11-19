@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scanning in Progress...</title>
+
+<style>
+    body {
+        font-family: Arial;
+        margin: 40px;
+        background: var(--bg);
+        color: var(--text);
+        transition: 0.3s;
+    }
+
+    :root {
+        --bg: white;
+        --text: black;
+        --table-bg: #f3f3f3;
+    }
+
+    .dark {
+        --bg: #121212;
+        --text: #ffffff;
+        --table-bg: #1e1e1e;
+    }
+
+    table {
+        background: var(--table-bg);
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px;
+        border: 1px solid gray;
+    }
+
+    .toggle-btn {
+        position: fixed;
+        right: 20px;
+        top: 20px;
+        padding: 8px 16px;
+        background: #333;
+        color: white;
+        cursor: pointer;
+        border: none;
+    }
+</style>
+
+<script>
+function toggleDarkMode() {
+    const body = document.body;
+    body.classList.toggle('dark');
+    localStorage.setItem("darkmode", body.classList.contains("dark"));
+}
+window.onload = () => {
+    if (localStorage.getItem("darkmode") === "true") {
+        document.body.classList.add("dark");
+    }
+    startScan();
+}
+
+let allResults = [];
+
+async function startScan() {
+    const url = "{{ url }}";
+    const params = {{ params | tojson }};
+    const payloads = {{ payloads | tojson }};
+    const method = "{{ method }}";
+    const auth_type = "{{ auth_type }}";
+    const bearer = "{{ bearer }}";
+    const cookie = "{{ cookie }}";
+    const headers = "{{ headers }}";
+
+    for (const p of params) {
+        let paramResults = {
+            param: p,
+            tests: []
+        };
+
+        const table = document.getElementById(`table-${p}`);
+        for (const pl of payloads) {
+            const row = table.insertRow(-1);
+            const cell1 = row.insertCell(0);
+            const cell2 = row.insertCell(1);
+            const cell3 = row.insertCell(2);
+            const cell4 = row.insertCell(3);
+
+            cell1.innerText = pl;
+            cell2.innerHTML = "<i>Testing...</i>";
+            cell3.innerText = "-";
+            cell4.innerText = "-";
+
+            const formData = new FormData();
+            formData.append("url", url);
+            formData.append("param", p);
+            formData.append("payload", pl);
+            formData.append("method", method);
+            formData.append("auth_type", auth_type);
+            formData.append("bearer", bearer);
+            formData.append("cookie", cookie);
+            formData.append("headers", headers);
+
+            const res = await fetch("/api/test", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+            paramResults.tests.push(data);
+
+            cell2.innerText = data.status || "ERR";
+            cell3.innerText = data.response_time || "-";
+            cell4.innerHTML = `<pre>${data.body_snippet || data.error}</pre>`;
+        }
+        allResults.push(paramResults);
+    }
+    document.getElementById("pdf-btn").style.display = "block";
+    document.getElementById("pdf-data").value = JSON.stringify(allResults);
+}
+</script>
+
+</head>
+<body>
+
+<button class="toggle-btn" onclick="toggleDarkMode()">🌓 Dark Mode</button>
+
+<h2>🔬 Scanning in Progress...</h2>
+<p><b>Target:</b> {{ url }}</p>
+
+<form id="pdf-form" method="POST" action="/api/export_pdf" target="_blank">
+    <input type="hidden" name="url" value="{{ url }}">
+    <input type="hidden" id="pdf-data" name="data" value="">
+    <button id="pdf-btn" type="submit" style="padding: 8px 16px; display:none;">⬇ Download PDF</button>
+</form>
+
+<br>
+
+{% for p in params %}
+<h3>Parameter: {{ p }}</h3>
+<table id="table-{{ p }}">
+<tr>
+    <th>Payload</th>
+    <th>Status</th>
+    <th>Time</th>
+    <th>Snippet</th>
+</tr>
+</table>
+<br>
+{% endfor %}
+
+<br>
+<a href="/">⬅ Back</a>
+
+</body>
+</html>
