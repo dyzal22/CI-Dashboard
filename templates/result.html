@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan Results</title>
+</head>
+<body style="font-family: Arial; margin: 40px;">
+
+    <h2>📄 Scan Results</h2>
+    <p>
+        URL: <b>{{ url }}</b><br>
+        Method: <b>{{ method }}</b>
+    </p>
+
+    {% for r in results %}
+    <h3>Parameter: {{ r.param }}</h3>
+
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Payload</th>
+            <th>Status</th>
+            <th>Time</th>
+            <th>Snippet</th>
+        </tr>
+
+        {% for t in r.tests %}
+        <tr>
+            <td>{{ t.payload }}</td>
+            <td>{{ t.status if "status" in t else "ERR" }}</td>
+            <td>{{ t.response_time if "response_time" in t else "-" }}</td>
+            <td><pre>{{ t.body_snippet }}</pre></td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    {% endfor %}
+
+    <br>
+    <a href="/">⬅ Back</a>
+
+</body>
+</html>

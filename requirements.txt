@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+requests
+jinja2
+beautifulsoup4
+lxml

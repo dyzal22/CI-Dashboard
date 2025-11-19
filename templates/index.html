@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Command Injection Web Dashboard</title>
+</head>
+<body style="font-family: Arial; margin: 40px;">
+
+<h2>🔍 Command Injection Scanner – Web Dashboard</h2>
+
+<form method="POST" action="/api/scan">
+
+    <label><b>Target URL:</b></label><br>
+    <input type="text" name="url" style="width: 400px;" placeholder="https://example.com/ping.php" required>
+    <br><br>
+
+    <label><b>Parameter:</b></label><br>
+    <select name="param">
+        <option value="auto">AUTO DISCOVER</option>
+    </select>
+    <br><br>
+
+    <label><b>HTTP Method:</b></label><br>
+    <select name="method">
+        <option value="get">GET</option>
+        <option value="post">POST</option>
+    </select>
+    <br><br>
+
+    <h3>Authentication</h3>
+
+    <label><b>Tipe Auth:</b></label><br>
+    <select name="auth_type">
+        <option value="none">None</option>
+        <option value="bearer">Bearer Token</option>
+    </select>
+    <br><br>
+
+    <label>Bearer Token:</label><br>
+    <input type="text" name="bearer" style="width: 400px;">
+    <br><br>
+
+    <label>Cookie:</label><br>
+    <input type="text" name="cookie" style="width: 400px;">
+    <br><br>
+
+    <label>Custom Headers (format: Header: Value per line)</label><br>
+    <textarea name="headers" style="width:400px; height:100px;"></textarea>
+    <br><br>
+
+    <button type="submit" style="padding: 10px 20px;">Start Scan</button>
+</form>
+
+</body>
+</html>
