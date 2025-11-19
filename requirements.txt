@@ -5,3 +5,4 @@ jinja2
 beautifulsoup4
 lxml
 reportlab
+python-multipart
