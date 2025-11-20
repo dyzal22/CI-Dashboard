@@ -67,6 +67,13 @@ window.onload = () => {
     <br><small><b>Required.</b> Enter a parameter name (e.g., 'id', 'user', 'q').<br>Set to 'auto' only for simple HTML forms; may not work on modern sites.</small>
     <br><br>
 
+    <label><b>Scan Type:</b></label><br>
+    <select name="scan_type">
+        <option value="command_injection">Command Injection</option>
+        <option value="sqli_blind">SQL Injection (Blind)</option>
+    </select>
+    <br><br>
+
     <label><b>Method:</b></label><br>
     <select name="method">
         <option value="get">GET</option>

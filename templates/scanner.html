@@ -66,6 +66,7 @@ async function startScan() {
     const url = "{{ url }}";
     const params = {{ params | tojson }};
     const payloads = {{ payloads | tojson }};
+    const scan_type = "{{ scan_type }}";
     const method = "{{ method }}";
     const auth_type = "{{ auth_type }}";
     const bearer = "{{ bearer }}";
@@ -95,6 +96,7 @@ async function startScan() {
             formData.append("url", url);
             formData.append("param", p);
             formData.append("payload", pl);
+            formData.append("scan_type", scan_type);
             formData.append("method", method);
             formData.append("auth_type", auth_type);
             formData.append("bearer", bearer);
@@ -131,6 +133,7 @@ async function startScan() {
 <form id="pdf-form" method="POST" action="/api/export_pdf" target="_blank">
     <input type="hidden" name="url" value="{{ url }}">
     <input type="hidden" id="pdf-data" name="data" value="">
+    <input type="hidden" name="scan_type" value="{{ scan_type }}">
     <button id="pdf-btn" type="submit" style="padding: 8px 16px; display:none;">⬇ Download PDF</button>
 </form>
 
